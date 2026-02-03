@@ -25,6 +25,7 @@ public class Bill {
     @ManyToOne
     private Theater theater;
 
+    @OneToMany
     private List<SeatBooking> seatBookings;
 
     @Column(nullable = false)
