@@ -6,6 +6,8 @@ import com.bms.bookmyshow_backend.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class UserService {
 
@@ -33,5 +35,9 @@ public class UserService {
 
         // we need to take this user object and save it inside the user table.
         return userRepository.save(user);
+    }
+
+    public User isUserIdExists(UUID userId) {
+        return userRepository.findById(userId).orElse(null);
     }
 }
