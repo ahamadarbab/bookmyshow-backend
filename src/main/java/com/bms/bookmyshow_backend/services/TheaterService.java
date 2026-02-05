@@ -23,10 +23,10 @@ public class TheaterService {
         this.theaterRepository = theaterRepository;
     }
 
-    public Theater registerTheater(UUID userID, RegisterTheaterDto registerTheaterDto) {
+    public Theater registerTheater(UUID userId, RegisterTheaterDto registerTheaterDto) {
         // 1. We want to validate whether userId exists in the user table or not.
         // 2. TheaterService -> UserService -> isUserIdExist()
-        User theaterOwner = userService.isUserIdExists(userID);
+        User theaterOwner = userService.isUserIdExists(userId);
 
         if(theaterOwner == null) {
             // If theaterOwner is null that means we got invalid id
@@ -48,5 +48,9 @@ public class TheaterService {
         theater.setTheaterOwner((theaterOwner));
 
         return theaterRepository.save(theater);
+    }
+
+    public Theater isTheaterExists(UUID theaterId) {
+        return theaterRepository.findById(theaterId).orElse(null);
     }
 }
