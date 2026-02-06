@@ -23,14 +23,14 @@ public class Movie {
     @Column(nullable = false)
     private String movieName;
 
-    @Column(nullable = false)
-    private String movieOwner;
+    @ManyToOne
+    private User movieOwner;
 
     @Column(nullable = false)
-    private double rating;
+    private Double rating;
 
     @Column(nullable = false)
-    private double totalIncome;
+    private Double totalIncome;
 
     @Column(nullable = false)
     private int totalTicketSold;
@@ -42,7 +42,7 @@ public class Movie {
     private Double movieDurationInHours;
 
     @Column(nullable = false)
-    private String Genre;
+    private String genre;
 
     @ManyToMany
     private List<Artist> artists;

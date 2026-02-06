@@ -28,6 +28,9 @@ public class Show {
     @Column(nullable = false)
     private int startTimeInSec;
 
+    @ManyToOne
+    private Movie movie;
+
     @Column(nullable = false)
     private int endTimeInSec;
 
