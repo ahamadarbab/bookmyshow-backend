@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Data
 public class RegisterShowDto {
-    private String ShowName;
+    private String showName;
     private LocalDateTime displayStartTime;
     private LocalDateTime displayEndTime;
 }

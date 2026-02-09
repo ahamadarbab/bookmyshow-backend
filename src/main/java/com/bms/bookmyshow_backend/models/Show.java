@@ -22,28 +22,21 @@ public class Show {
     @ManyToOne
     private Hall hall;
 
-    @Column(nullable = false)
     private String showName;
 
-    @Column(nullable = false)
     private long startTimeInSec;
 
     @ManyToOne
     private Movie movie;
 
-    @Column(nullable = false)
     private long endTimeInSec;
 
-    @Column(nullable = false)
     private LocalDateTime displayStartTime;
 
-    @Column(nullable = false)
     private LocalDateTime displayEndTime;
 
-    @Column(nullable = false)
     private int totalTicketSold;
 
-    @Column(nullable = false)
     private Double totalRevenue;
 
 }
