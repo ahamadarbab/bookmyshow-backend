@@ -11,6 +11,7 @@ import com.bms.bookmyshow_backend.repositories.HallRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -54,5 +55,10 @@ public class HallService {
         hall.setTheater(theater);
 
         return hallRepository.save(hall);
+    }
+
+    public Hall isHallIdValid(UUID hallId) {
+        Optional<Hall> hall = hallRepository.findById(hallId);
+        return hall.orElse(null);
     }
 }

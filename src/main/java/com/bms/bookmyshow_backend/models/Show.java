@@ -26,13 +26,13 @@ public class Show {
     private String showName;
 
     @Column(nullable = false)
-    private int startTimeInSec;
+    private long startTimeInSec;
 
     @ManyToOne
     private Movie movie;
 
     @Column(nullable = false)
-    private int endTimeInSec;
+    private long endTimeInSec;
 
     @Column(nullable = false)
     private LocalDateTime displayStartTime;
