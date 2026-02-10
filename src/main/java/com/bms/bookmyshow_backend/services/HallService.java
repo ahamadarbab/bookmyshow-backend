@@ -1,16 +1,21 @@
 package com.bms.bookmyshow_backend.services;
 
 import com.bms.bookmyshow_backend.dto.RegisterHallDto;
+import com.bms.bookmyshow_backend.dto.RegisterHallRowMappingDto;
 import com.bms.bookmyshow_backend.exception.TheaterNotFoundException;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
 import com.bms.bookmyshow_backend.exception.UserNotFoundException;
 import com.bms.bookmyshow_backend.models.Hall;
+import com.bms.bookmyshow_backend.models.HallRowMapping;
 import com.bms.bookmyshow_backend.models.Theater;
 import com.bms.bookmyshow_backend.models.User;
 import com.bms.bookmyshow_backend.repositories.HallRepository;
+import com.bms.bookmyshow_backend.repositories.HallRowMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,12 +25,14 @@ public class HallService {
     UserService userService;
     TheaterService theaterService;
     HallRepository hallRepository;
+    HallRowMappingRepository hallRowMappingRepository;
 
     @Autowired
-    public HallService(UserService userService, TheaterService theaterService, HallRepository hallRepository) {
+    public HallService(UserService userService, TheaterService theaterService, HallRepository hallRepository, HallRowMappingRepository hallRowMappingRepository) {
         this.userService = userService;
         this.theaterService = theaterService;
         this.hallRepository = hallRepository;
+        this.hallRowMappingRepository = hallRowMappingRepository;
     }
 
     public Hall registerHall(RegisterHallDto registerHallDto, UUID userId, UUID theaterId) {
@@ -55,6 +62,42 @@ public class HallService {
         hall.setTheater(theater);
 
         return hallRepository.save(hall);
+    }
+
+    public List<HallRowMapping> createHallRowMappings(List<RegisterHallRowMappingDto> mappingDtos, UUID userId) {
+        User theaterOwner = userService.isUserIdExists(userId);
+        if(theaterOwner == null) {
+            throw new UserNotFoundException("User does not exist");
+        }
+        if(!theaterOwner.getUserType().equals("THEATER_OWNER")) {
+            throw new UnAuthorizedException("User does not have permission to create hall-row mapping");
+        }
+
+        List<HallRowMapping> mappings = new ArrayList<>();
+        for(RegisterHallRowMappingDto rowMappingDto : mappingDtos) {
+            UUID hallId = rowMappingDto.getHallId();
+            Hall hall = this.isHallIdValid(hallId);
+
+            if(hall == null) {
+                throw new IllegalArgumentException("Invalid hall Id");
+            }
+
+            if(!hall.getTheater().getTheaterOwner().getId().equals(theaterOwner.getId())) {
+                throw new UnAuthorizedException("User does not own the hall");
+            }
+
+            HallRowMapping hallRowMapping = new HallRowMapping();
+            hallRowMapping.setHall(hall);
+            hallRowMapping.setRowRange(rowMappingDto.getRowRange());
+            hallRowMapping.setRowType(rowMappingDto.getRowType());
+            hallRowMapping.setSeatCount(rowMappingDto.getSeatCount());
+
+            hallRowMapping = hallRowMappingRepository.save(hallRowMapping);
+
+            mappings.add(hallRowMapping);
+        }
+
+        return mappings;
     }
 
     public Hall isHallIdValid(UUID hallId) {

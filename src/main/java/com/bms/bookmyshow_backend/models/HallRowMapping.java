@@ -28,6 +28,6 @@ public class HallRowMapping {
     private String rowRange;
 
     @Column(nullable = false)
-    private int seatCountPerRow;
+    private int seatCount;
 
 }
