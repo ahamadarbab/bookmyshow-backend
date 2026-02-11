@@ -2,6 +2,7 @@ package com.bms.bookmyshow_backend.services;
 
 import com.bms.bookmyshow_backend.dto.RegisterShowDto;
 import com.bms.bookmyshow_backend.dto.RegisterShowPriceMappingDto;
+import com.bms.bookmyshow_backend.dto.SeatStatusDto;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
 import com.bms.bookmyshow_backend.exception.UserNotFoundException;
 import com.bms.bookmyshow_backend.models.*;
@@ -25,16 +26,18 @@ public class ShowService {
     HallService hallService;
     UserService userService;
     ShowPriceMappingRepository showPriceMappingRepository;
+    SeatBookingService seatBookingService;
     // 1/1/2015 00:00:00
     LocalDateTime worldStartTime = LocalDateTime.of(2015, 1, 1, 0, 0, 0);
 
     @Autowired
-    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository) {
+    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository, SeatBookingService seatBookingService) {
         this.showRepository = showRepository;
         this.movieService = movieService;
         this.hallService = hallService;
         this.userService = userService;
         this.showPriceMappingRepository = showPriceMappingRepository;
+        this.seatBookingService = seatBookingService;
     }
 
     public Show createShow(RegisterShowDto registerShowDto, UUID movieId, UUID hallId, UUID userId) {
@@ -135,4 +138,43 @@ public class ShowService {
 
         return showPriceMappingRepository.saveAll(priceMappings);
     }
+
+    public List<SeatStatusDto> fetchAllSeatStatus(UUID showId) {
+        Show show = this.getShowById(showId);
+        Hall hall = show.getHall();
+        List<HallRowMapping> rowMappings = hallService.getHallRowMappingByHall(hall);
+        List<SeatStatusDto> seatDetails = new ArrayList<>();
+
+        if(show == null || hall == null || rowMappings == null) {
+            throw new IllegalArgumentException("Invalid ids are passed");
+        }
+
+        for(HallRowMapping hallRowMapping : rowMappings) {
+            String rowRange = hallRowMapping.getRowRange();
+            String[] range = rowRange.split("-");
+            char st = range[0].charAt(0);
+            char en = range[1].charAt(0);
+            int seatCount = hallRowMapping.getSeatCount();
+            ShowPriceMapping priceMapping = showPriceMappingRepository.getPriceMappingRecordByShowAndRowMapping(showId, hallRowMapping.getId());
+            Double price = priceMapping.getPrice();
+            for(char row = st; row <= en; row++) {
+                for(int i = 1; i <= seatCount; i++) {
+                    String seatId = row + "-" + i;
+                    // I want to check that this seat is available or not?
+                    boolean status = seatBookingService.isSeatAvailableForShow(seatId, show.getId());
+                    SeatStatusDto seatStatusDto = new SeatStatusDto();
+                    seatStatusDto.setStatus(status);
+                    seatStatusDto.setShowId(showId);
+                    seatStatusDto.setSeatType(hallRowMapping.getRowType());
+                    seatStatusDto.setPrice(price);
+                    seatStatusDto.setHallId(hall.getId());
+                    seatStatusDto.setSeatId(seatId);
+                    seatDetails.add(seatStatusDto);
+                }
+            }
+        }
+        return seatDetails;
+    }
+
+
 }

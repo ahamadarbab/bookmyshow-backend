@@ -2,6 +2,7 @@ package com.bms.bookmyshow_backend.controllers;
 
 import com.bms.bookmyshow_backend.dto.RegisterShowDto;
 import com.bms.bookmyshow_backend.dto.RegisterShowPriceMappingDto;
+import com.bms.bookmyshow_backend.dto.SeatStatusDto;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
 import com.bms.bookmyshow_backend.exception.UserNotFoundException;
 import com.bms.bookmyshow_backend.models.Show;
@@ -55,6 +56,30 @@ public class ShowController {
         try {
             List<ShowPriceMapping> priceMappings = showService.createPriceMapping(mappingDtos, userId);
             return new ResponseEntity(priceMappings, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+        } catch (UserNotFoundException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+        } catch (UnAuthorizedException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/show-seat-status/{showId}")
+    public ResponseEntity fetchShowSeatStatus(@PathVariable UUID showId) {
+        try {
+            List<SeatStatusDto> seatStatusDtoList = showService.fetchAllSeatStatus(showId);
+            return new ResponseEntity(seatStatusDtoList, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             Map<String, String> response = new HashMap<>();
             response.put("message", e.getMessage());

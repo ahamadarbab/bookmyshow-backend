@@ -108,4 +108,8 @@ public class HallService {
     public HallRowMapping getHallRowMappingById(UUID id) {
         return hallRowMappingRepository.findById(id).orElse(null);
     }
+
+    public List<HallRowMapping> getHallRowMappingByHall(Hall hall) {
+        return hallRowMappingRepository.findRowMappingByHall(hall);
+    }
 }
