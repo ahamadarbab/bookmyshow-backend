@@ -1,17 +1,18 @@
 package com.bms.bookmyshow_backend.services;
 
 import com.bms.bookmyshow_backend.dto.RegisterShowDto;
+import com.bms.bookmyshow_backend.dto.RegisterShowPriceMappingDto;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
-import com.bms.bookmyshow_backend.models.Hall;
-import com.bms.bookmyshow_backend.models.Movie;
-import com.bms.bookmyshow_backend.models.Show;
-import com.bms.bookmyshow_backend.models.User;
+import com.bms.bookmyshow_backend.exception.UserNotFoundException;
+import com.bms.bookmyshow_backend.models.*;
+import com.bms.bookmyshow_backend.repositories.ShowPriceMappingRepository;
 import com.bms.bookmyshow_backend.repositories.ShowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -23,15 +24,17 @@ public class ShowService {
     MovieService movieService;
     HallService hallService;
     UserService userService;
+    ShowPriceMappingRepository showPriceMappingRepository;
     // 1/1/2015 00:00:00
     LocalDateTime worldStartTime = LocalDateTime.of(2015, 1, 1, 0, 0, 0);
 
     @Autowired
-    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService) {
+    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository) {
         this.showRepository = showRepository;
         this.movieService = movieService;
         this.hallService = hallService;
         this.userService = userService;
+        this.showPriceMappingRepository = showPriceMappingRepository;
     }
 
     public Show createShow(RegisterShowDto registerShowDto, UUID movieId, UUID hallId, UUID userId) {
@@ -91,5 +94,45 @@ public class ShowService {
         }
 
         return showRepository.save(show);
+    }
+
+    public Show getShowById(UUID showId) {
+        return showRepository.findById(showId).orElse(null);
+    }
+
+    public List<ShowPriceMapping> createPriceMapping(List<RegisterShowPriceMappingDto> mappingDtos, UUID userId) {
+        User theaterOwner = userService.isUserIdExists(userId);
+        if(theaterOwner == null) {
+            throw new UserNotFoundException("User does not exists");
+        }
+
+        if(!theaterOwner.getUserType().equals("THEATER_OWNER")) {
+            throw new UnAuthorizedException("User does not have the permission to create show-price mapping");
+        }
+
+        List<ShowPriceMapping> priceMappings = new ArrayList<>();
+
+        for(RegisterShowPriceMappingDto mappingDto : mappingDtos) {
+            UUID showId = mappingDto.getShowId();
+            Show show = this.getShowById(showId);
+            UUID hallId = mappingDto.getHallId();
+            Hall hall = hallService.isHallIdValid(hallId);
+            UUID hallRowMappingId = mappingDto.getHallRowMappingId();
+            HallRowMapping hallRowMapping = hallService.getHallRowMappingById(hallRowMappingId);
+
+            if(show == null || hall == null || hallRowMapping == null) {
+                throw new IllegalArgumentException("Invalid ids passed in request body");
+            }
+
+            ShowPriceMapping showPriceMapping = new ShowPriceMapping();
+            showPriceMapping.setShow(show);
+            showPriceMapping.setHall(hall);
+            showPriceMapping.setHallRowMapping(hallRowMapping);
+            showPriceMapping.setPrice(mappingDto.getPrice());
+
+            priceMappings.add(showPriceMapping);
+        }
+
+        return showPriceMappingRepository.saveAll(priceMappings);
     }
 }

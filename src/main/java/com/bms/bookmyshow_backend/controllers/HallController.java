@@ -53,7 +53,7 @@ public class HallController {
         }
     }
 
-    @PostMapping("/create-mappings")
+    @PostMapping("/create-row-mapping")
     public ResponseEntity createHallRowMapping(@RequestBody List<RegisterHallRowMappingDto> mappingsDto, @RequestParam UUID userId) {
         try {
             List<HallRowMapping> mappings = hallService.createHallRowMappings(mappingsDto, userId);

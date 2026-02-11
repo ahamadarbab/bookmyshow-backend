@@ -1,8 +1,11 @@
 package com.bms.bookmyshow_backend.controllers;
 
 import com.bms.bookmyshow_backend.dto.RegisterShowDto;
+import com.bms.bookmyshow_backend.dto.RegisterShowPriceMappingDto;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
+import com.bms.bookmyshow_backend.exception.UserNotFoundException;
 import com.bms.bookmyshow_backend.models.Show;
+import com.bms.bookmyshow_backend.models.ShowPriceMapping;
 import com.bms.bookmyshow_backend.services.ShowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,6 +36,30 @@ public class ShowController {
             Show show = showService.createShow(registerShowDto, movieId, hallId, userId);
             return new ResponseEntity(show, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+        } catch (UnAuthorizedException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/create-price-mapping")
+    public ResponseEntity createShowPriceMapping(@RequestBody List<RegisterShowPriceMappingDto> mappingDtos, @RequestParam UUID userId) {
+        try {
+            List<ShowPriceMapping> priceMappings = showService.createPriceMapping(mappingDtos, userId);
+            return new ResponseEntity(priceMappings, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", e.getMessage());
+            return new ResponseEntity(response, HttpStatus.BAD_REQUEST);
+        } catch (UserNotFoundException e) {
             Map<String, String> response = new HashMap<>();
             response.put("message", e.getMessage());
             return new ResponseEntity(response, HttpStatus.BAD_REQUEST);

@@ -104,4 +104,8 @@ public class HallService {
         Optional<Hall> hall = hallRepository.findById(hallId);
         return hall.orElse(null);
     }
+
+    public HallRowMapping getHallRowMappingById(UUID id) {
+        return hallRowMappingRepository.findById(id).orElse(null);
+    }
 }
