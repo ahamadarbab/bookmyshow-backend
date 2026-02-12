@@ -24,4 +24,12 @@ public class SeatBookingService {
         }
         return false;
     }
+
+    public String generateTicketId() {
+        return "Ticket-" + seatBookingRepository.count();
+    }
+
+    public SeatBooking saveOrUpdate(SeatBooking seatBooking) {
+        return seatBookingRepository.save(seatBooking);
+    }
 }

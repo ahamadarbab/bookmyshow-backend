@@ -10,10 +10,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 public class SeatStatusDto {
-    UUID showId;
-    UUID hallId;
-    String seatId;  // A-10
-    String seatType;
-    boolean status;
-    Double price;
+    private UUID showId;
+    private UUID hallId;
+    private String seatId;  // A-10
+    private String seatType;
+    private boolean status;
+    private Double price;
 }

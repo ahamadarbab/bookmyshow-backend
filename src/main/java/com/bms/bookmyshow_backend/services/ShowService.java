@@ -1,11 +1,13 @@
 package com.bms.bookmyshow_backend.services;
 
+import com.bms.bookmyshow_backend.dto.RegisterSeatBookingDto;
 import com.bms.bookmyshow_backend.dto.RegisterShowDto;
 import com.bms.bookmyshow_backend.dto.RegisterShowPriceMappingDto;
 import com.bms.bookmyshow_backend.dto.SeatStatusDto;
 import com.bms.bookmyshow_backend.exception.UnAuthorizedException;
 import com.bms.bookmyshow_backend.exception.UserNotFoundException;
 import com.bms.bookmyshow_backend.models.*;
+import com.bms.bookmyshow_backend.repositories.BillRepository;
 import com.bms.bookmyshow_backend.repositories.ShowPriceMappingRepository;
 import com.bms.bookmyshow_backend.repositories.ShowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,17 +29,19 @@ public class ShowService {
     UserService userService;
     ShowPriceMappingRepository showPriceMappingRepository;
     SeatBookingService seatBookingService;
+    BillRepository billRepository;
     // 1/1/2015 00:00:00
     LocalDateTime worldStartTime = LocalDateTime.of(2015, 1, 1, 0, 0, 0);
 
     @Autowired
-    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository, SeatBookingService seatBookingService) {
+    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository, SeatBookingService seatBookingService, BillRepository billRepository) {
         this.showRepository = showRepository;
         this.movieService = movieService;
         this.hallService = hallService;
         this.userService = userService;
         this.showPriceMappingRepository = showPriceMappingRepository;
         this.seatBookingService = seatBookingService;
+        this.billRepository = billRepository;
     }
 
     public Show createShow(RegisterShowDto registerShowDto, UUID movieId, UUID hallId, UUID userId) {
@@ -176,5 +180,71 @@ public class ShowService {
         return seatDetails;
     }
 
+    public Bill bookSeatForShow(RegisterSeatBookingDto seatBookingDto, UUID userId, UUID showId) {
+        // showId or userId -> are they valid or not
+        Show show = this.getShowById(showId);
+        User customer = userService.isUserIdExists(userId);
 
+        if(customer == null || show == null) {
+            throw new IllegalArgumentException("Invalid Id's passed");
+        }
+
+        List<String> seatIds = seatBookingDto.getSeatIds();
+
+        for(String seatId : seatIds) {
+            boolean seatStatus = seatBookingService.isSeatAvailableForShow(seatId, showId);
+            if(!seatStatus) {
+                throw new IllegalArgumentException("Seat is already booked");
+            }
+        }
+
+        List<SeatBooking> seatBookingList = new ArrayList<>();
+        double price = 0;
+
+        for(String seatId : seatIds) {
+            ShowPriceMapping showPriceMapping = this.getShowPriceOnTheBasisOfSeatId(seatId, show);
+            price += showPriceMapping.getPrice();
+            SeatBooking seatBooking = new SeatBooking();
+            seatBooking.setShow(show);
+            seatBooking.setSeatId(seatId);
+            seatBooking.setUser(customer);
+            String ticketId = seatBookingService.generateTicketId();
+            seatBooking.setTicketId(ticketId);
+            seatBooking = seatBookingService.saveOrUpdate(seatBooking);
+            seatBookingList.add(seatBooking);
+        }
+
+        Bill bill = new Bill();
+        bill.setSeatBookings(seatBookingList);
+        bill.setTheater(show.getHall().getTheater());
+        bill.setCustomer(customer);
+        bill.setPaymentId(seatBookingDto.getPaymentId());
+        bill.setPaymentSource(seatBookingDto.getPaymentSource());
+        bill.setTotalPrice(price);
+
+        bill = billRepository.save(bill);
+
+        return bill;
+    }
+
+    public ShowPriceMapping getShowPriceOnTheBasisOfSeatId(String seatId, Show show) {
+        HallRowMapping hallRowMapping = this.getRowMappingOnTheBasisOfSeatId(seatId, show.getHall());
+        return showPriceMappingRepository.getPriceMappingRecordByShowAndRowMapping(show.getId(), hallRowMapping.getId());
+    }
+
+    public HallRowMapping getRowMappingOnTheBasisOfSeatId(String seatId, Hall hall) {
+        List<HallRowMapping> rowMappings = hallService.getHallRowMappingByHall(hall);
+        char seatRow = seatId.split("-")[0].charAt(0);
+        for(HallRowMapping rowMapping : rowMappings) {
+            String range = rowMapping.getRowRange();  // A-D
+            String[] rangeArr = range.split("-");
+            char stRange = rangeArr[0].charAt(0);
+            char enRange = rangeArr[1].charAt(0);
+
+            if(seatRow >= stRange && seatRow <= enRange) {
+                return rowMapping;
+            }
+        }
+        return null;
+    }
 }
