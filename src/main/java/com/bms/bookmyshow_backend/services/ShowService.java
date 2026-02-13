@@ -189,6 +189,10 @@ public class ShowService {
             throw new IllegalArgumentException("Invalid Id's passed");
         }
 
+        if(!customer.getUserType().equals("CUSTOMER")) {
+            throw new UnAuthorizedException("Only Customers are allowed to book the seat");
+        }
+
         List<String> seatIds = seatBookingDto.getSeatIds();
 
         for(String seatId : seatIds) {
