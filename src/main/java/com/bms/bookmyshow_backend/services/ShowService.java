@@ -30,11 +30,12 @@ public class ShowService {
     ShowPriceMappingRepository showPriceMappingRepository;
     SeatBookingService seatBookingService;
     BillRepository billRepository;
+    MailService mailService;
     // 1/1/2015 00:00:00
     LocalDateTime worldStartTime = LocalDateTime.of(2015, 1, 1, 0, 0, 0);
 
     @Autowired
-    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository, SeatBookingService seatBookingService, BillRepository billRepository) {
+    public ShowService(ShowRepository showRepository, MovieService movieService, HallService hallService, UserService userService, ShowPriceMappingRepository showPriceMappingRepository, SeatBookingService seatBookingService, BillRepository billRepository, MailService mailService) {
         this.showRepository = showRepository;
         this.movieService = movieService;
         this.hallService = hallService;
@@ -42,6 +43,7 @@ public class ShowService {
         this.showPriceMappingRepository = showPriceMappingRepository;
         this.seatBookingService = seatBookingService;
         this.billRepository = billRepository;
+        this.mailService = mailService;
     }
 
     public Show createShow(RegisterShowDto registerShowDto, UUID movieId, UUID hallId, UUID userId) {
@@ -189,6 +191,10 @@ public class ShowService {
             throw new IllegalArgumentException("Invalid Id's passed");
         }
 
+        if(!customer.getUserType().equals("CUSTOMER")) {
+            throw new UnAuthorizedException("Only Customers are allowed to book the seat");
+        }
+
         List<String> seatIds = seatBookingDto.getSeatIds();
 
         for(String seatId : seatIds) {
@@ -223,6 +229,8 @@ public class ShowService {
         bill.setTotalPrice(price);
 
         bill = billRepository.save(bill);
+
+        mailService.sendBillDetailsToCustomer(bill);
 
         return bill;
     }
